@@ -10,7 +10,7 @@ tools = [TavilySearchResults(max_results=3)]
 
 # 2. SETUP BRAIN (Gemini Pro - The Universal Model)
 llm = ChatGoogleGenerativeAI(
-    model="gemini-pro", 
+    model="model=gemini-1.5-flash",, 
     temperature=0,
     convert_system_message_to_human=True
 ).bind_tools(tools)
