@@ -1,6 +1,6 @@
 langgraph
 langchain
-langchain-google-genai
+langchain-openai
 langchain-community
 tavily-python
 python-dotenv
