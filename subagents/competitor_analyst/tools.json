@@ -1,0 +1,20 @@
+{
+  "tools": [
+    {
+      "name": "tavily_web_search",
+      "mcp_server_url": "https://api.tavily.com",
+      "mcp_server_name": null,
+      "display_name": "tavily_web_search"
+    },
+    {
+      "name": "read_url_content",
+      "mcp_server_url": "https://agent-builder-mcp-server.example.com",
+      "mcp_server_name": null,
+      "display_name": "read_url_content"
+    }
+  ],
+  "interrupt_config": {
+    "https://api.tavily.com::tavily_web_search::": false,
+    "https://agent-builder-mcp-server.example.com::read_url_content::": false
+  }
+}

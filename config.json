@@ -1,0 +1,6 @@
+{
+  "name": "SEO_Strategist_and_Auditor",
+  "description": "A comprehensive SEO agent that performs weekly site audits, competitor keyword analysis, and strategy planning. It provides detailed insights on technical SEO, on-page optimization, and market positioning.",
+  "visibility_scope": "user",
+  "triggers_paused": false
+}
