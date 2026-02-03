@@ -1,6 +1,6 @@
 import os
 from typing import TypedDict, Literal, List
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, END
@@ -8,14 +8,8 @@ from langgraph.graph import StateGraph, END
 # 1. SETUP TOOLS
 tools = [TavilySearchResults(max_results=3)]
 
-# 2. SETUP BRAIN
-# We use 'transport="rest"' to bypass firewall issues that cause 404 errors
-llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
-    transport="rest",
-    temperature=0,
-    convert_system_message_to_human=True
-).bind_tools(tools)
+# 2. SETUP BRAIN (OpenAI GPT-4o)
+llm = ChatOpenAI(model="gpt-4o", temperature=0).bind_tools(tools)
 
 # 3. LOAD YOUR PROMPTS
 def load_prompt():
@@ -34,7 +28,6 @@ class AgentState(TypedDict):
 def seo_node(state: AgentState):
     messages = state["messages"]
     sys_msg = SystemMessage(content=SYSTEM_PROMPT)
-    # Invoke the model
     response = llm.invoke([sys_msg] + messages)
     return {"messages": [response]}
 
