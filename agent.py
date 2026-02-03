@@ -1,20 +1,22 @@
 import os
 from typing import TypedDict, Literal, List
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, END
 
 # 1. SETUP TOOLS
-# We map the tools mentioned in your JSON files to real Python tools
 tools = [TavilySearchResults(max_results=3)]
 
-# 2. SETUP BRAIN (LLM)
-# We bind the tools so the agent knows it can search the web
-llm = ChatOpenAI(model="gpt-4o", temperature=0).bind_tools(tools)
+# 2. SETUP BRAIN (Gemini)
+# We use Gemini 1.5 Pro (or Flash) instead of GPT-4
+llm = ChatGoogleGenerativeAI(
+    model="gemini-1.5-pro", 
+    temperature=0,
+    convert_system_message_to_human=True # Required for some Gemini versions
+).bind_tools(tools)
 
 # 3. LOAD YOUR PROMPTS
-# We read the instructions from the AGENTS.md file you uploaded
 def load_prompt():
     if os.path.exists("AGENTS.md"):
         with open("AGENTS.md", "r") as f:
@@ -29,21 +31,19 @@ class AgentState(TypedDict):
 
 # 5. DEFINE NODES
 def seo_node(state: AgentState):
-    """The Main SEO Strategist"""
     messages = state["messages"]
-    # Add the system instructions to the conversation
     sys_msg = SystemMessage(content=SYSTEM_PROMPT)
-    # Call the AI
+    # Gemini handles messages slightly differently, but this standard invocation works for most
     response = llm.invoke([sys_msg] + messages)
     return {"messages": [response]}
 
 def tool_node(state: AgentState):
-    """Executes search tools if asked"""
     last_message = state["messages"][-1]
     results = []
     if last_message.tool_calls:
         for tool_call in last_message.tool_calls:
-            if tool_call["name"] == "tavily_search_results_json": # LangChain default name
+            # LangChain names the Tavily tool "tavily_search_results_json"
+            if tool_call["name"] == "tavily_search_results_json":
                 tool = TavilySearchResults()
                 res = tool.invoke(tool_call["args"])
                 results.append(HumanMessage(content=str(res)))
