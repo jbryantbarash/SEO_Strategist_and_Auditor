@@ -11,9 +11,9 @@ tools = [TavilySearchResults(max_results=3)]
 # 2. SETUP BRAIN (Gemini)
 # We use Gemini 1.5 Pro (or Flash) instead of GPT-4
 llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-pro", 
+    model="gemini-1.5-flash", 
     temperature=0,
-    convert_system_message_to_human=True # Required for some Gemini versions
+    convert_system_message_to_human=True
 ).bind_tools(tools)
 
 # 3. LOAD YOUR PROMPTS
