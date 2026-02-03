@@ -8,9 +8,11 @@ from langgraph.graph import StateGraph, END
 # 1. SETUP TOOLS
 tools = [TavilySearchResults(max_results=3)]
 
-# 2. SETUP BRAIN (Gemini 1.5 Flash)
+# 2. SETUP BRAIN
+# We use 'transport="rest"' to bypass firewall issues that cause 404 errors
 llm = ChatGoogleGenerativeAI(
     model="gemini-1.5-flash",
+    transport="rest",
     temperature=0,
     convert_system_message_to_human=True
 ).bind_tools(tools)
