@@ -8,9 +8,9 @@ from langgraph.graph import StateGraph, END
 # 1. SETUP TOOLS
 tools = [TavilySearchResults(max_results=3)]
 
-# 2. SETUP BRAIN (Gemini Pro - The Universal Model)
+# 2. SETUP BRAIN (Gemini 1.5 Flash)
 llm = ChatGoogleGenerativeAI(
-    model="model=gemini-1.5-flash",, 
+    model="gemini-1.5-flash",
     temperature=0,
     convert_system_message_to_human=True
 ).bind_tools(tools)
