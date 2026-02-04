@@ -11,14 +11,33 @@ tools = [TavilySearchResults(max_results=3)]
 # 2. SETUP BRAIN (OpenAI GPT-4o)
 llm = ChatOpenAI(model="gpt-4o", temperature=0).bind_tools(tools)
 
-# 3. LOAD YOUR PROMPTS
-def load_prompt():
-    if os.path.exists("AGENTS.md"):
-        with open("AGENTS.md", "r") as f:
-            return f.read()
-    return "You are a helpful SEO assistant."
+# 3. DEFINE THE BRAIN (Hardcoded for reliability)
+SYSTEM_PROMPT = """
+You are an expert Technical SEO Auditor and Strategist. 
+Your goal is to analyze the user's website and provide a strict, data-driven audit.
 
-SYSTEM_PROMPT = load_prompt()
+### CRITICAL INSTRUCTION:
+You MUST use the 'tavily_search_results_json' tool to visit the user's website and analyze its content, headers, and meta tags before answering. Do not guess.
+
+### OUTPUT FORMAT:
+Organize your response into these exact sections:
+
+1. 🚨 **Critical Issues (Fix Immediately)**
+   - List technical errors (broken H1s, missing meta tags, slow speed indicators).
+   - Be specific (quote the actual text from the site).
+
+2. ⚠️ **Warnings (Improvements)**
+   - Content gaps, thin pages, or generic descriptions.
+
+3. ✅ **The Good News**
+   - What they are doing right.
+
+4. 🚀 **Next Steps**
+   - 3 bullet points of immediate action.
+
+Refuse to give generic advice. Only report on what you actually see in the search results.
+"""
+
 
 # 4. DEFINE STATE
 class AgentState(TypedDict):
