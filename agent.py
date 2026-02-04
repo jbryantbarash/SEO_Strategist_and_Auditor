@@ -1,11 +1,11 @@
 import os
 from typing import TypedDict, Literal, List, Annotated
-from langgraph.graph.message import add_messages
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolNode # <--- NEW: Import the official node
+from langgraph.prebuilt import ToolNode
+from langgraph.graph.message import add_messages # <--- CRITICAL FIX
 
 # 1. SETUP TOOLS
 tools = [TavilySearchResults(max_results=3)]
@@ -14,12 +14,13 @@ tools = [TavilySearchResults(max_results=3)]
 llm = ChatOpenAI(model="gpt-4o", temperature=0).bind_tools(tools)
 
 # 3. SYSTEM PROMPT
+# I updated this to say "search for" instead of "visit" to prevent 400 Errors
 SYSTEM_PROMPT = """
 You are an expert Technical SEO Auditor and Strategist. 
 Your goal is to analyze the user's website and provide a strict, data-driven audit.
 
 ### CRITICAL INSTRUCTION:
-You MUST use the 'tavily_search_results_json' tool to visit the user's website and analyze its content, headers, and meta tags before answering. Do not guess.
+You MUST use the 'tavily_search_results_json' tool to search for the user's website (e.g., "site:kflexpack.com") to analyze its content, headers, and meta tags before answering.
 
 ### OUTPUT FORMAT:
 Organize your response into these exact sections:
@@ -40,8 +41,9 @@ Organize your response into these exact sections:
 Refuse to give generic advice. Only report on what you actually see in the search results.
 """
 
+# 4. DEFINE STATE (Fixed with 'add_messages')
 class AgentState(TypedDict):
-    # The 'add_messages' function ensures new messages are appended, not overwritten
+    # This prevents the "Invalid Parameter" error by appending messages instead of overwriting them
     messages: Annotated[List[HumanMessage], add_messages]
 
 # 5. DEFINE NODES
@@ -52,7 +54,7 @@ def seo_node(state: AgentState):
     response = llm.invoke([sys_msg] + messages)
     return {"messages": [response]}
 
-# <--- NEW: We use the prebuilt ToolNode instead of writing it manually
+# Use the official ToolNode
 tool_node = ToolNode(tools)
 
 # 6. ROUTING LOGIC
