@@ -5,7 +5,7 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
-from langgraph.graph.message import add_messages # <--- CRITICAL FIX
+from langgraph.graph.message import add_messages
 
 # 1. SETUP TOOLS
 tools = [TavilySearchResults(max_results=3)]
@@ -13,48 +13,35 @@ tools = [TavilySearchResults(max_results=3)]
 # 2. SETUP BRAIN (OpenAI GPT-4o)
 llm = ChatOpenAI(model="gpt-4o", temperature=0).bind_tools(tools)
 
-# 3. SYSTEM PROMPT
-# I updated this to say "search for" instead of "visit" to prevent 400 Errors
+# 3. SYSTEM PROMPT (Simplified)
 SYSTEM_PROMPT = """
-You are an expert Technical SEO Auditor and Strategist. 
-Your goal is to analyze the user's website and provide a strict, data-driven audit.
+You are an expert SEO Auditor. 
+Your goal is to provide a helpful, data-driven audit of the user's website.
 
-### CRITICAL INSTRUCTION:
-You MUST use the 'tavily_search_results_json' tool to search for the user's website (e.g., "site:kflexpack.com") to analyze its content, headers, and meta tags before answering.
+INSTRUCTIONS:
+1. Always start by searching for the user's website to see how it appears in results.
+2. Look for the homepage title, meta description, and top keywords.
+3. Report your findings in this format:
 
-### OUTPUT FORMAT:
-Organize your response into these exact sections:
+   🚨 **Critical Issues** (Technical problems or missing tags)
+   ⚠️ **Warnings** (Content gaps)
+   ✅ **Good News** (What is working)
+   🚀 **Next Steps** (Actionable advice)
 
-1. 🚨 **Critical Issues (Fix Immediately)**
-   - List technical errors (broken H1s, missing meta tags, slow speed indicators).
-   - Be specific (quote the actual text from the site).
-
-2. ⚠️ **Warnings (Improvements)**
-   - Content gaps, thin pages, or generic descriptions.
-
-3. ✅ **The Good News**
-   - What they are doing right.
-
-4. 🚀 **Next Steps**
-   - 3 bullet points of immediate action.
-
-Refuse to give generic advice. Only report on what you actually see in the search results.
+Do not make up information. If you cannot see specific technical details (like page speed), just analyze the visible content and search presence.
 """
 
-# 4. DEFINE STATE (Fixed with 'add_messages')
+# 4. DEFINE STATE
 class AgentState(TypedDict):
-    # This prevents the "Invalid Parameter" error by appending messages instead of overwriting them
     messages: Annotated[List[HumanMessage], add_messages]
 
 # 5. DEFINE NODES
 def seo_node(state: AgentState):
     messages = state["messages"]
     sys_msg = SystemMessage(content=SYSTEM_PROMPT)
-    # We allow the LLM to see the system prompt + conversation
     response = llm.invoke([sys_msg] + messages)
     return {"messages": [response]}
 
-# Use the official ToolNode
 tool_node = ToolNode(tools)
 
 # 6. ROUTING LOGIC
