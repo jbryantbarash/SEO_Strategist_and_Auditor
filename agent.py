@@ -1,5 +1,6 @@
 import os
-from typing import TypedDict, Literal, List
+from typing import TypedDict, Literal, List, Annotated
+from langgraph.graph.message import add_messages
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -39,9 +40,9 @@ Organize your response into these exact sections:
 Refuse to give generic advice. Only report on what you actually see in the search results.
 """
 
-# 4. DEFINE STATE
 class AgentState(TypedDict):
-    messages: List[HumanMessage]
+    # The 'add_messages' function ensures new messages are appended, not overwritten
+    messages: Annotated[List[HumanMessage], add_messages]
 
 # 5. DEFINE NODES
 def seo_node(state: AgentState):
