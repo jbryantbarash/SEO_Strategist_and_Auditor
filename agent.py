@@ -4,6 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, END
+from langgraph.prebuilt import ToolNode # <--- NEW: Import the official node
 
 # 1. SETUP TOOLS
 tools = [TavilySearchResults(max_results=3)]
@@ -11,7 +12,7 @@ tools = [TavilySearchResults(max_results=3)]
 # 2. SETUP BRAIN (OpenAI GPT-4o)
 llm = ChatOpenAI(model="gpt-4o", temperature=0).bind_tools(tools)
 
-# 3. DEFINE THE BRAIN (Hardcoded for reliability)
+# 3. SYSTEM PROMPT
 SYSTEM_PROMPT = """
 You are an expert Technical SEO Auditor and Strategist. 
 Your goal is to analyze the user's website and provide a strict, data-driven audit.
@@ -38,7 +39,6 @@ Organize your response into these exact sections:
 Refuse to give generic advice. Only report on what you actually see in the search results.
 """
 
-
 # 4. DEFINE STATE
 class AgentState(TypedDict):
     messages: List[HumanMessage]
@@ -47,19 +47,12 @@ class AgentState(TypedDict):
 def seo_node(state: AgentState):
     messages = state["messages"]
     sys_msg = SystemMessage(content=SYSTEM_PROMPT)
+    # We allow the LLM to see the system prompt + conversation
     response = llm.invoke([sys_msg] + messages)
     return {"messages": [response]}
 
-def tool_node(state: AgentState):
-    last_message = state["messages"][-1]
-    results = []
-    if last_message.tool_calls:
-        for tool_call in last_message.tool_calls:
-            if tool_call["name"] == "tavily_search_results_json":
-                tool = TavilySearchResults()
-                res = tool.invoke(tool_call["args"])
-                results.append(HumanMessage(content=str(res)))
-    return {"messages": results}
+# <--- NEW: We use the prebuilt ToolNode instead of writing it manually
+tool_node = ToolNode(tools)
 
 # 6. ROUTING LOGIC
 def router(state: AgentState):
