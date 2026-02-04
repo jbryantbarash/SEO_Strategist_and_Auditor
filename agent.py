@@ -3,32 +3,43 @@ from typing import TypedDict, Literal, List, Annotated
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.tools import tool
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 from langgraph.graph.message import add_messages
 
-# 1. SETUP TOOLS
-tools = [TavilySearchResults(max_results=3)]
+# 1. DEFINE A STRICT TOOL
+# We wrap the search tool to ensure the AI always sends a valid query
+@tool
+def web_search(query: str):
+    """
+    Search the web for information. 
+    Always use this to find the user's website content or competitors.
+    """
+    search_tool = TavilySearchResults(max_results=3)
+    # We force the input to be exactly what Tavily expects
+    return search_tool.invoke({"query": query})
 
-# 2. SETUP BRAIN (OpenAI GPT-4o)
+tools = [web_search]
+
+# 2. SETUP BRAIN
 llm = ChatOpenAI(model="gpt-4o", temperature=0).bind_tools(tools)
 
-# 3. SYSTEM PROMPT (Simplified)
+# 3. SYSTEM PROMPT
 SYSTEM_PROMPT = """
 You are an expert SEO Auditor. 
 Your goal is to provide a helpful, data-driven audit of the user's website.
 
 INSTRUCTIONS:
-1. Always start by searching for the user's website to see how it appears in results.
-2. Look for the homepage title, meta description, and top keywords.
-3. Report your findings in this format:
+1. Start by searching for the website (e.g. "kflexpack.com homepage title keywords") using the 'web_search' tool.
+2. Report your findings in this format:
 
    🚨 **Critical Issues** (Technical problems or missing tags)
    ⚠️ **Warnings** (Content gaps)
    ✅ **Good News** (What is working)
    🚀 **Next Steps** (Actionable advice)
 
-Do not make up information. If you cannot see specific technical details (like page speed), just analyze the visible content and search presence.
+Do not make up information. If the search returns generic info, admit it, but analyze what you can see.
 """
 
 # 4. DEFINE STATE
@@ -42,6 +53,7 @@ def seo_node(state: AgentState):
     response = llm.invoke([sys_msg] + messages)
     return {"messages": [response]}
 
+# Use the prebuilt node for our custom tool
 tool_node = ToolNode(tools)
 
 # 6. ROUTING LOGIC
